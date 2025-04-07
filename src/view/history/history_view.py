@@ -59,6 +59,24 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
         self.bookList.isDelMenu = True
         self.bookList.DelCallBack = self.DelCallBack
 
+        sql_httphis = """\
+            create table if not exists history_http(\
+            bookId varchar primary key,\
+            taskName varchar,\
+            headers varchar, \
+            method varchar,\
+            st int,\
+            isFavorite boolean,\
+            decodeData varchar,\
+            tick int,\
+            url varchar\
+            )\
+            """
+        suc_httphis = query.exec_(sql_httphis)
+        if not suc_httphis:
+            a = query.lastError().text()
+            Log.Warn(a)
+
     def SwitchCurrent(self, **kwargs):
         self.bookList.clear()
         self.bookList.page = 1

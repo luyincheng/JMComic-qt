@@ -233,7 +233,10 @@ class Setting:
     def GetConfigPath():
         import sys
         if sys.platform == "win32":
-            return "data"
+            #C:\software\jmcomic_v1.2.6_windows_x64\jmcomic_v1.2.6_windows_x64\jmcomic\
+            return "C:\software\jmcomic_v1.2.6_windows_x64\jmcomic_v1.2.6_windows_x64\jmcomic\data"
+            #return "data"
+        
         else:
             from PySide6.QtCore import QDir
             homePath = QDir.homePath()

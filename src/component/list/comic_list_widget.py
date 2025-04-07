@@ -35,6 +35,7 @@ class ComicListWidget(BaseListWidget):
         self.isLocal = False
         self.isLocalEps = False
         self.openMenu = False
+        self.useCache=False
 
     def SelectMenuBook(self, pos):
         index = self.indexAt(pos)
@@ -147,10 +148,11 @@ class ComicListWidget(BaseListWidget):
         path = v.path
         url = v.url
         categories = "{} {}".format(ToolUtil.GetUpdateStrByTick(v.tick), Str.GetStr(Str.Looked))
-        self.AddBookItem(_id, title, categories, url)
+        self.AddBookItem(_id, title, categories, url,True)
 
-    def AddBookItem(self, _id, title, categoryStr="", url=""):
+    def AddBookItem(self, _id, title, categoryStr="", url="",useCache=False):
         index = self.count()
+        self.useCache=useCache
         widget = ComicItemWidget()
         widget.setFocusPolicy(Qt.NoFocus)
         widget.title = title
@@ -239,7 +241,7 @@ class ComicListWidget(BaseListWidget):
         elif self.isLocal:
             QtOwner().OpenLocalBook(widget.id)
         else:
-            QtOwner().OpenBookInfo(widget.id, widget.GetTitle())
+            QtOwner().OpenBookInfo(widget.id, widget.GetTitle(),self.useCache)
         return
 
     def OpenBookInfoHandler(self, index):

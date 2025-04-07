@@ -116,7 +116,7 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
         if bookId:
             self.bookId = str(bookId)
             self.idLabel.setText("JM" +str(self.bookId))
-            self.OpenBook(self.bookId)
+            self.OpenBook(self.bookId,kwargs.get("useCache", False))
 
         bookName = kwargs.get("bookName")
         if bookName:
@@ -124,7 +124,7 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
             self.title.setText(bookName)
         pass
 
-    def OpenBook(self, bookId):
+    def OpenBook(self, bookId,useCache=False):
         self.bookId = bookId
         if QtOwner().isOfflineModel:
             self.tabWidget.setCurrentIndex(1)
@@ -134,7 +134,33 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
         self.Clear()
         self.show()
         QtOwner().ShowLoading()
-        self.AddHttpTask(req.GetBookInfoReq2(self.bookId), self.OpenBookBack)
+
+        if useCache:
+            #查找本地库
+            sql="select * from history_http where bookId = '{0}' and taskName='{1}' order by tick desc limit 1".format(self.bookId,req.GetBookInfoReq2.__name__)
+            db=QtOwner().historyView.db
+            from PySide6.QtSql import QSqlQuery
+            from tools.log import Log
+            query = QSqlQuery(db)
+            suc = query.exec_(sql)
+            if not suc:
+                Log.Warn(query.lastError().text())
+            if query.next():
+                info, isFavorite = ToolUtil.ParseBookInfo2(query.value(6))
+                data = { 
+                    "errorMsg":"",
+                    "message":"",
+                    "st":query.value(4),
+                    "isFavorite":query.value(5),
+                    "bookInfo": info
+                }
+                from tools.book import BookMgr
+                BookMgr().UpdateBookInfo(self.bookId, info)
+                self.OpenBookBack(data)
+            else:
+                self.AddHttpTask(req.GetBookInfoReq2(self.bookId), self.OpenBookBack)
+        else:
+            self.AddHttpTask(req.GetBookInfoReq2(self.bookId), self.OpenBookBack)
 
     def OpenBookBack(self, raw):
         QtOwner().CloseLoading()

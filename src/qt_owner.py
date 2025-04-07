@@ -255,9 +255,9 @@ class QtOwner(Singleton):
         arg = {"categories": categories}
         self.owner.SwitchWidget(self.owner.searchView, **arg)
 
-    def OpenBookInfo(self, bookId, bookName=""):
+    def OpenBookInfo(self, bookId, bookName="",useCache=False):
         # self.owner.subCommentView.SetOpenEvent(commentId, widget)
-        arg = {"bookId": bookId, "bookName": bookName}
+        arg = {"bookId": bookId, "bookName": bookName,"useCache":useCache}
         self.owner.SwitchWidget(self.owner.bookInfoView, **arg)
 
     def OpenSomeDownload(self, bookList=None):

@@ -55,6 +55,9 @@ class QtTaskBase:
         from tools.qt_domain import QtDomainMgr
         from task.task_http import TaskHttp
         # if not Setting.IsOpenDoh.value:
+
+        #查找本地历史
+
         return TaskHttp().AddHttpTask(req, callBack, backParam, cleanFlag=self.__taskFlagId)
         # else:
         #     return QtDomainMgr().AddHttpTask(req, callBack, backParam, cleanFlag=self.__taskFlagId)

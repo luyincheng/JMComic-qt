@@ -141,3 +141,8 @@ history.db
 # Downloaded Commies for PicACG
 commies/
 test/__init__.py
+
+.vscode/
+data/
+*.code-workspace
+src/icon.ico

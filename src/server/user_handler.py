@@ -580,12 +580,37 @@ class GetBookInfoReq2Handler(object):
             if code != 200:
                 data["st"] = Status.Error
                 return
-            info, isFavorite = ToolUtil.ParseBookInfo2(task.req.ParseData(v.get("data")))
+            decode_data = task.req.ParseData(v.get("data"))
+            info, isFavorite = ToolUtil.ParseBookInfo2(decode_data)
             from tools.book import BookMgr
             BookMgr().UpdateBookInfo(task.req.bookId, info)
             data["st"] = Status.Ok
             data["isFavorite"] = isFavorite
             data["bookInfo"] = info
+
+            #保存记录
+            sql = "INSERT INTO history_http(bookId, taskName, headers, method, st,isFavorite,decodeData,tick,url) " \
+                        "VALUES (:bookId, :taskName, :headers, :method, :st, :isFavorite,:decodeData,:tick,:url) " \
+                        "ON CONFLICT(bookId) DO UPDATE SET taskName= :taskName, headers=:headers, method=:method, st = :st, isFavorite=:isFavorite, decodeData=:decodeData,tick=:tick,url=:url".\
+                        format(task.req.bookId, task.req.__class__.__name__, json.dumps(task.req.headers), task.req.method, data["st"], data["isFavorite"], decode_data,task.req.now, task.req.url)
+            from qt_owner import QtOwner
+            from PySide6.QtSql import QSqlQuery
+            db=QtOwner().historyView.db
+            query = QSqlQuery(db)
+            query.prepare(sql)
+            query.bindValue(':bookId', task.req.bookId)
+            query.bindValue(':taskName', task.req.__class__.__name__)
+            query.bindValue(':headers', json.dumps(task.req.headers))
+            query.bindValue(':method', task.req.method)
+            query.bindValue(':st', data["st"])
+            query.bindValue(':isFavorite', data["isFavorite"])
+            query.bindValue(':decodeData', decode_data)
+            query.bindValue(':tick', task.req.now)
+            query.bindValue(':url', task.req.url)
+            suc = query.exec()
+            if not suc:
+                Log.Warn(query.lastError().text())
+
         except Exception as es:
             data["st"] = Status.ParseError
             Log.Error(es)
