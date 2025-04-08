@@ -30,7 +30,8 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
         # self.bookList.InitBook(self.LoadNextPage)
         self.pageNums = 20
         self.bookList.LoadCallBack = self.LoadNextPage
-        self.history = {}
+        #self.history = {}
+        self.total = 0
         self.db = QSqlDatabase.addDatabase("QSQLITE", "history")
         path = os.path.join(Setting.GetConfigPath(), "history.db")
         self.db.setDatabaseName(path)
@@ -80,15 +81,36 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
     def SwitchCurrent(self, **kwargs):
         self.bookList.clear()
         self.bookList.page = 1
-        self.bookList.pages = len(self.history) // self.pageNums + 1
+        self.bookList.pages = self.GetTotal() // self.pageNums + 1
         self.spinBox.setValue(1)
         self.spinBox.setMaximum(self.pageNums)
         self.bookList.UpdateState()
         self.UpdatePageLabel()
         self.RefreshData(self.bookList.page)
 
+    def GetTotal(self):
+        sql="select count(*) from history"
+        query = QSqlQuery(self.db)
+        query.exec_(sql)
+        if query.next():
+            self.total = query.value(0)
+        return self.total
+    
     def GetHistory(self, bookId):
-        return self.history.get(bookId)
+        sql="select * from history where bookId='{}'".format(bookId)
+        query = QSqlQuery(self.db)
+        query.exec_(sql)
+        if query.next():
+            info = QtHistoryData()
+            info.bookId = query.value(0)
+            info.name = query.value(1)
+            info.epsId = query.value(2)
+            info.picIndex = query.value(3)
+            info.url = query.value(4)
+            info.path = query.value(5)
+            info.tick = query.value(6)
+            return info
+        return None
 
     def DelHistory(self, bookId):
         query = QSqlQuery(self.db)
@@ -100,17 +122,18 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
 
     def AddHistory(self, bookId, name, epsId, index, url, path):
         tick = int(time.time())
-        info = self.history.get(bookId)
-        if not info:
-            info = QtHistoryData()
-            self.history[bookId] = info
-        info.bookId = bookId
-        info.name = name
-        info.epsId = epsId
-        info.picIndex = index
-        info.url = url
-        info.path = path
-        info.tick = tick
+        #info = self.history.get(bookId)
+        #if not info:
+         #   info = QtHistoryData()
+         #   self.history[bookId] = info
+        # info = QtHistoryData()
+        # info.bookId = bookId
+        # info.name = name
+        # info.epsId = epsId
+        # info.picIndex = index
+        # info.url = url
+        # info.path = path
+        # info.tick = tick
 
         query = QSqlQuery(self.db)
 
@@ -123,13 +146,14 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
             Log.Warn(query.lastError().text())
         return
 
-    def LoadHistory(self):
+    def LoadHistory(self,page=1,pageNums=20):
         query = QSqlQuery(self.db)
         query.exec_(
             """
-            select * from history
-            """
+            select * from history order by tick desc limit {0},{1}
+            """.format((page-1)*pageNums, page*pageNums-1)  # 0, self.pageNums
         )
+        historylist = []
         while query.next():
             # bookId, name, epsId, index, url, path
             info = QtHistoryData()
@@ -140,8 +164,9 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
             info.url = query.value(4)
             info.path = query.value(5)
             info.tick = query.value(6)
-            self.history[info.bookId] = info
-        pass
+            #self.history.append(info)
+            historylist.append(info)
+        return historylist
 
     def JumpPage(self):
         page = int(self.spinBox.text())
@@ -158,21 +183,23 @@ class HistoryView(QtWidgets.QWidget, Ui_History):
         self.UpdatePageLabel()
 
     def RefreshData(self, page):
-        sortedList = list(self.history.values())
-        sortedList.sort(key=lambda a: a.tick, reverse=True)
+        #sortedList = list(self.history.values())
+        #sortedList.sort(key=lambda a: a.tick, reverse=True)
+        sortedList =self.LoadHistory(page,self.pageNums)
         self.bookList.UpdateState()
-        start = (page-1) * self.pageNums
-        end = start + self.pageNums
-        for info in sortedList[start:end]:
+        #start = (page-1) * self.pageNums
+        #end = start + self.pageNums
+        #for info in sortedList[start:end]:
+        for info in sortedList:
             self.bookList.AddBookItemByHistory(info)
 
     def UpdatePageLabel(self):
         self.pages.setText(Str.GetStr(Str.Page)+"：{}/{}".format(str(self.bookList.page), str(self.bookList.pages)))
 
     def DelCallBack(self, bookId):
-        if bookId not in self.history:
-            return
-        self.history.pop(bookId)
+        #if bookId not in self.history:
+        #    return
+        #self.history.pop(bookId)
         self.DelHistory(bookId)
         self.bookList.DelBookID(bookId)
         # page = 1

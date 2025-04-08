@@ -34,7 +34,7 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
         self.pictureData = None
         self.isFavorite = False
         self.isLike = False
-
+        self.useCache= False
         self.picture.installEventFilter(self)
         self.title.setWordWrap(True)
         self.title.setTextInteractionFlags(Qt.TextBrowserInteraction)
@@ -116,7 +116,8 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
         if bookId:
             self.bookId = str(bookId)
             self.idLabel.setText("JM" +str(self.bookId))
-            self.OpenBook(self.bookId,kwargs.get("useCache", False))
+            self.useCache = kwargs.get("useCache", False)
+            self.OpenBook(self.bookId,self.useCache)
 
         bookName = kwargs.get("bookName")
         if bookName:
@@ -206,11 +207,18 @@ class BookInfoView(QtWidgets.QWidget, Ui_BookInfo, QtTaskBase):
             self.path = ToolUtil.GetRealPath(self.bookId, "cover")
             # dayStr = ToolUtil.GetUpdateStr(info.pageInfo.createDate)
             # self.updateTick.setText(str(dayStr) + Str.GetStr(Str.Updated))
-            if config.IsLoadingPicture:
-                if QtOwner().isOfflineModel:
-                    self.AddDownloadTask(self.url, self.path, completeCallBack=self.UpdatePicture)
-                else:
-                    self.AddDownloadTask(self.url, self.path, completeCallBack=self.UpdatePicture, isReload=True)
+            if self.useCache:
+                cachePath=os.path.join(config.CachePathDir, config.CoverPathDir,self.bookId)
+                if Setting.SavePath.value:
+                    cachePath = os.path.join(Setting.SavePath.value,cachePath)
+                picData=ToolUtil.LoadCachePicture(cachePath)
+                self.UpdatePicture(picData, Status.Ok)
+            else:
+                if config.IsLoadingPicture:
+                    if QtOwner().isOfflineModel: 
+                        self.AddDownloadTask(self.url, self.path, completeCallBack=self.UpdatePicture)
+                    else:
+                        self.AddDownloadTask(self.url, self.path, completeCallBack=self.UpdatePicture, isReload=True)
             self.UpdateEpsData()
             self.lastEpsId = -1
             self.LoadHistory()

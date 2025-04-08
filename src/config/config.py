@@ -13,7 +13,7 @@ CachePathDir = "cache"         # cache目录
 # CacheExpired = 24 * 60 * 60  # cache过期时间24小时
 PreLoading = 10                # 预加载5页
 PreLook = 4                    # 预显示
-
+CoverPathDir = "cover"          # 封面目录
 IsLoadingPicture = True
 
 AppUrl = "https://app.ggo.icu/JMComic"
